@@ -1,6 +1,6 @@
 FROM python:alpine3.19
 WORKDIR /root
-RUN apk update && apk upgrade && apk add jq bash curl wget git tzdata
+RUN apk update && apk upgrade && apk add jq bash curl wget git tzdata libffi-dev
 RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN.UTF-8

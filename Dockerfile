@@ -6,7 +6,7 @@ RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" 
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN.UTF-8
 RUN rm -rf *.apk && rm -rf /var/cache/apk/* && rm -rf locale.md && git clone https://github.com/nianhua99/PandoraNext-Helper.git && ls -l && cp -r PandoraNext-Helper/* /root
-RUN wget https://raw.githubusercontent.com/KQlittle/Helper-buildpaas/main/main
+RUN wget -O /root/main https://raw.githubusercontent.com/KQlittle/Helper-buildpaas/main/main
 RUN pip3 install -r requirements.txt && rm -rf PandoraNext-Helper
 RUN sed -i 's|#!/bin/sh|#!/bin/bash|' /root/main
 RUN chmod a+x main

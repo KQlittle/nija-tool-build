@@ -1,13 +1,10 @@
-FROM python:alpine3.19
+FROM python:3.9-slim-bookworm
 WORKDIR /root
-RUN apk update && apk upgrade && apk add jq bash curl wget git tzdata libffi-dev
-RUN cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo "Asia/Shanghai" > /etc/timezone
-ENV LANG=zh_CN.UTF-8
-ENV LANGUAGE=zh_CN.UTF-8
-RUN rm -rf *.apk && rm -rf /var/cache/apk/* && rm -rf locale.md
+RUN apt-get update && apt-get install jq bash curl wget
+ENV TZ Asia/Shanghai
 COPY main /root
 COPY PandoraNext-Helper-0.6.8/* /root
-RUN pip3 install -r requirements.txt && rm -rf PandoraNext-Helper-0.6.8
+RUN pip install -r requirements.txt --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 RUN sed -i 's|#!/bin/sh|#!/bin/bash|' /root/main
 RUN chmod a+x main
 CMD ["/root/main"]

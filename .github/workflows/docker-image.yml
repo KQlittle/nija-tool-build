@@ -2,9 +2,6 @@ name: "Build and push images"
 
 on:
   push:
-    paths:
-      - 'Dockerfile'
-      - 'main'
     branches:
       - main
 

@@ -1,0 +1,79 @@
+#!/bin/bash
+mkdir -p /data/logs
+PANDORA_NEXT_DATA="/data"
+Pdlport=${Pdlport:-8181}
+pandora_version=$(curl -s "https://api.github.com/repos/pandora-next/deploy/releases/latest" | jq -r .tag_name)
+arch=$(uname -m)
+case $arch in
+    i386) filename="PandoraNext-${pandora_version}-linux-386-e1cae28.tar.gz" ume=386;;
+    aarch64) filename="PandoraNext-${pandora_version}-linux-arm-e1cae28.tar.gz" ume=arm;;
+    arm64) filename="PandoraNext-${pandora_version}-linux-arm64-e1cae28.tar.gz" ume=arm64;;
+    x86_64) filename="PandoraNext-${pandora_version}-linux-amd64-e1cae28.tar.gz" ume=amd64;;
+    *)
+        echo "没有该系统架构运行包" >> /data/logs/$(date +"%Y%m%d")_log.txt
+        exit 1
+        ;;
+esac
+if [ ! -f "$filename" ]; then
+    if [ ! -f "PandoraNext" ]; then
+        echo "下载：$filename" >> /data/logs/$(date +"%Y%m%d")_log.txt
+        rm -rf PandoraNext-* /data/license.jwt PandoraNext
+        wget "https://hub.fastgit.org/pandora-next/deploy/releases/download/$pandora_version/$filename"
+        tar -xzvf "$filename"
+        cp -r "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/PandoraNext .
+        cp -n "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/config.json /data/
+        cp -n "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/tokens.json /data/
+        chmod a+x PandoraNext
+        rm -rf "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"
+        sed -i 's/"bind": "127.0.0.1:8181"/"bind": "0.0.0.0:'"$Pdlport"'"/' /data/config.json
+        sed -i 's/"license_id": ""/"license_id": "'"$licid"'"/' /data/config.json
+        sed -i 's/"proxy_api_prefix": ""/"proxy_api_prefix": "'"$proxy_api_prefix"'"/' /data/config.json
+        sed -i 's/"setup_password": ""/"proxy_api_prefix": "'"$setup_password"'"/' /data/config.json
+        chmod a+x PandoraNext
+        echo "下载完成" >> /data/logs/$(date +"%Y%m%d")_log.txt
+    else
+        if [  "$new" = 1  ]; then
+            echo "更新：$filename" >> /data/logs/$(date +"%Y%m%d")_log.txt
+            rm -rf PandoraNext-* /data/license.jwt PandoraNext pandoraNext-*
+            wget "https://hub.fastgit.org/pandora-next/deploy/releases/download/$pandora_version/$filename"
+            tar -xzvf "$filename"
+            cp -r "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/PandoraNext .
+            chmod a+x PandoraNext
+            rm -rf "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"
+            sed -i 's/"bind": "127.0.0.1:8181"/"bind": "0.0.0.0:'"$Pdlport"'"/' /data/config.json
+            sed -i 's/"license_id": ""/"license_id": "'"$licid"'"/' /data/config.json
+            sed -i 's/"proxy_api_prefix": ""/"proxy_api_prefix": "'"$proxy_api_prefix"'"/' /data/config.json
+            sed -i 's/"setup_password": ""/"proxy_api_prefix": "'"$setup_password"'"/' /data/config.json
+            echo "更新完成" >> /data/logs/$(date +"%Y%m%d")_log.txt
+        fi
+    fi
+else
+    echo "必要文件已存在，无需下载" >> /data/logs/$(date +"%Y%m%d")_log.txt
+fi
+while true
+do
+    current_date=$(date +"%Y%m%d")
+    log_file="${current_date}_log.txt"
+    python_process=$(ps aux | grep 'python3' | grep "waitress_run.py" | grep -v grep)
+    pandora_log=$(ps aux | grep 'config' | grep "PandoraNext" | grep -v grep)
+    if [ -z "$pandora_log" ]; then
+        echo "运行PandoraNext"
+        /root/PandoraNext -config "${PANDORA_NEXT_DATA}/config.json" -tokens "${PANDORA_NEXT_DATA}/tokens.json" -license "${PANDORA_NEXT_DATA}/license.jwt" >> /data/logs/$log_file 2>&1 &
+        sleep 3
+    fi
+    if [ -z "$python_process" ]; then
+        echo "运行$pandora-next-helper"
+        python3 waitress_run.py >> /data/logs/$log_file 2>&1 &
+        sleep 3
+    fi
+    current_hour=$(date +"%H")
+    current_minute=$(date +"%M")
+    target_hour=0
+    target_minute=0
+    time_difference=$(( (target_hour - current_hour) * 3600 + (target_minute - current_minute) * 60 ))
+    if [ $time_difference -lt 0 ]; then
+        time_difference=$((time_difference + 24 * 3600))
+    fi
+    sleep $time_difference
+done
+tail -f /dev/null

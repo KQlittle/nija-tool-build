@@ -11,3 +11,4 @@ RUN pip3 install -r requirements.txt && rm -rf PandoraNext-Helper-0.6.8
 RUN sed -i 's|#!/bin/sh|#!/bin/bash|' /root/main
 RUN chmod a+x main
 CMD ["/root/main"]
+

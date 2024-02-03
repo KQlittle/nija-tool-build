@@ -1,49 +1,51 @@
 #!/bin/bash
 mkdir -p /data/logs
 PANDORA_NEXT_DATA="/data"
+PT_PORT=${PT_PORT:-8081}
 Pdlport=${Pdlport:-8181}
-pandora_version=$(curl -s "https://api.github.com/repos/pandora-next/deploy/releases/latest" | jq -r .tag_name)
+pandora_version=$(curl -s "https://api.github.com/repos/gngpp/ninja/releases/latest" | jq -r .tag_name)
+new_url=$(curl -s "https://api.github.com/repos/Yanyutin753/refresh-gpt-chat/releases/latest" | jq -r .assets[0].browser_download_url)
+tokensTool_version=$(echo "$new_url" | sed 's|https://github.com|https://hub.fastgit.org|g')
+filenames=$(curl -s "https://api.github.com/repos/Yanyutin753/refresh-gpt-chat/releases/latest" | jq -r .assets[0].name)
 arch=$(uname -m)
 case $arch in
-    i386) filename="PandoraNext-${pandora_version}-linux-386-e1cae28.tar.gz" ume=386;;
-    aarch64) filename="PandoraNext-${pandora_version}-linux-arm-e1cae28.tar.gz" ume=arm;;
-    arm64) filename="PandoraNext-${pandora_version}-linux-arm64-e1cae28.tar.gz" ume=arm64;;
-    x86_64) filename="PandoraNext-${pandora_version}-linux-amd64-e1cae28.tar.gz" ume=amd64;;
+    aarch64) filename="ninja-${pandora_version}-aarch64-unknown-linux-musl.tar.gz" ume=aarch64;;
+    arm) filename="ninja-${pandora_version}-arm-unknown-linux-musl.tar.gz" ume=arm;;
+    x86_64) filename="ninja-${pandora_version}-x86_64-unknown-linux-musl.tar.gz" ume=amd64;;
     *)
-        echo "没有该系统架构运行包" >> /data/logs/$(date +"%Y%m%d")_log.txt
+        echo "没有该系统架构运行包" >> /data/logs/$(date +"%Y-%m-%d")logs.txt
         exit 1
         ;;
 esac
 if [ ! -f "$filename" ]; then
-    if [ ! -f "PandoraNext" ]; then
-        echo "下载：$filename" >> /data/logs/$(date +"%Y%m%d")_log.txt
-        rm -rf PandoraNext-* /data/license.jwt PandoraNext
-        wget "https://hub.fastgit.org/pandora-next/deploy/releases/download/$pandora_version/$filename"
-        tar -xzvf "$filename"
-        cp -r "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/PandoraNext .
-        cp -n "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/config.json /data/
-        cp -n "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/tokens.json /data/
-        chmod a+x PandoraNext
-        rm -rf "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"
-        sed -i 's/"bind": "127.0.0.1:8181"/"bind": "0.0.0.0:'"$Pdlport"'"/' /data/config.json
-        sed -i 's/"license_id": ""/"license_id": "'"$licid"'"/' /data/config.json
-        sed -i 's/"proxy_api_prefix": ""/"proxy_api_prefix": "'"$proxy_api_prefix"'"/' /data/config.json
-        sed -i 's/"setup_password": ""/"proxy_api_prefix": "'"$setup_password"'"/' /data/config.json
-        chmod a+x PandoraNext
+    if [ ! -f "/usr/bin/ninja" ]; then
+        echo "下载：$filename与$filenames" >> /data/logs/$(date +"%Y%m%d")_log.txt
+        rm -rf ninja-* ninja
+        wget "https://hub.fastgit.org/gngpp/ninja/releases/download/$pandora_version/$filename"
+        if [ ! -f "filenames" ]; then
+            rm -rf refresh-*
+            wget "$tokensTool_version"
+        fi
+        tar -xf "$filename"
+        mv ./ninja /data/ninja
+        chmod a+x /data/ninja
+        ninja gt -o serve.toml
+        sed -i 's/"bind" = "0.0.0.0:7999"/"bind": "0.0.0.0:'"$Pdlport"'"/' serve.toml
+        cp -n serve.toml /data/
+        chmod a+x /data/ninja
         echo "下载完成" >> /data/logs/$(date +"%Y%m%d")_log.txt
     else
         if [  "$new" = 1  ]; then
-            echo "更新：$filename" >> /data/logs/$(date +"%Y%m%d")_log.txt
-            rm -rf PandoraNext-* /data/license.jwt PandoraNext pandoraNext-*
-            wget "https://hub.fastgit.org/pandora-next/deploy/releases/download/$pandora_version/$filename"
-            tar -xzvf "$filename"
-            cp -r "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"/PandoraNext .
-            chmod a+x PandoraNext
-            rm -rf "PandoraNext-${pandora_version}-linux-${ume}-e1cae28"
-            sed -i 's/"bind": "127.0.0.1:8181"/"bind": "0.0.0.0:'"$Pdlport"'"/' /data/config.json
-            sed -i 's/"license_id": ""/"license_id": "'"$licid"'"/' /data/config.json
-            sed -i 's/"proxy_api_prefix": ""/"proxy_api_prefix": "'"$proxy_api_prefix"'"/' /data/config.json
-            sed -i 's/"setup_password": ""/"proxy_api_prefix": "'"$setup_password"'"/' /data/config.json
+            echo "更新：$filename和$filenames" >> /data/logs/$(date +"%Y%m%d")_log.txt
+            rm -rf ninja-* /data/ninja refresh-*
+            wget "https://hub.fastgit.org/gngpp/ninja/releases/download/$pandora_version/$filename"
+            if [ ! -f "filenames" ]; then
+                rm -rf refresh-*
+                wget "$tokensTool_version"
+            fi
+            tar -xf "$filename"
+            cp -r ninja /data/
+            chmod a+x /data/ninja
             echo "更新完成" >> /data/logs/$(date +"%Y%m%d")_log.txt
         fi
     fi
@@ -54,16 +56,16 @@ while true
 do
     current_date=$(date +"%Y%m%d")
     log_file="${current_date}_log.txt"
-    python_process=$(ps aux | grep 'python3' | grep "waitress_run.py" | grep -v grep)
-    pandora_log=$(ps aux | grep 'config' | grep "PandoraNext" | grep -v grep)
+    java_process=$(ps aux | grep 'java' | grep "$filenames" | grep -v grep)
+    pandora_log=$(ps aux | grep "ninja" | grep -v grep)
     if [ -z "$pandora_log" ]; then
-        echo "运行PandoraNext"
-        /root/PandoraNext -config "${PANDORA_NEXT_DATA}/config.json" -tokens "${PANDORA_NEXT_DATA}/tokens.json" -license "${PANDORA_NEXT_DATA}/license.jwt" >> /data/logs/$log_file 2>&1 &
+        echo "运行ninja"
+        /data/ninja start -C /data/serve.toml >> /data/logs/$log_file 2>&1 &
         sleep 3
     fi
-    if [ -z "$python_process" ]; then
-        echo "运行$pandora-next-helper"
-        python3 waitress_run.py >> /data/logs/$log_file 2>&1 &
+    if [ -z "$java_process" ]; then
+        echo "运行$filenames"
+        java -XX:+UseG1GC -Xms16m -Xmx32m -XX:MaxMetaspaceSize=64m -jar "$filenames" --server.port==$PT_PORT --server.servlet.context-path=$Tool_path --getAccessTokenUrl=https://chat.kwxos.top/url/auth/refresh_token --chatUrl=http(s)://chat.kwxos.top/v1/chat/completions >> /data/logs/$log_file 2>&1 &
         sleep 3
     fi
     current_hour=$(date +"%H")

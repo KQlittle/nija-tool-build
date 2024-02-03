@@ -30,7 +30,7 @@ if [ ! -f "$filename" ]; then
         tar -xf "$filename"
         cp -r ninja /data/
         chmod a+x /data/ninja
-        ninja gt -o serve.toml
+        /data/ninja gt -o serve.toml
         sed -i 's/"bind" = "0.0.0.0:7999"/"bind": "0.0.0.0:'"$Pdlport"'"/' serve.toml
         cp -n serve.toml /data/
         chmod a+x /data/ninja

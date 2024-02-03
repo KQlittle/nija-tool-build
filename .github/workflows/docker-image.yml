@@ -37,4 +37,4 @@ jobs:
         with:
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ env.DOCKERHUB_REPOSITORY }}helper
+          tags: ${{ env.DOCKERHUB_REPOSITORY }}ninja

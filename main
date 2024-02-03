@@ -38,7 +38,7 @@ if [ ! -f "$filename" ]; then
         if [  "$new" = 1  ]; then
             echo "更新：$filename和$filenames" >> /data/logs/$(date +"%Y%m%d")_log.txt
             rm -rf ninja-* /data/ninja refresh-*
-            wget "https://hub.fastgit.org/gngpp/ninja/releases/download/$pandora_version/$filename"
+            wget "https://github.com/gngpp/ninja/releases/download/$pandora_version/$filename"
             if [ ! -f "filenames" ]; then
                 rm -rf refresh-*
                 wget "$tokensTool_version"

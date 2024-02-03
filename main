@@ -65,7 +65,7 @@ do
     fi
     if [ -z "$java_process" ]; then
         echo "运行$filenames"
-        java -XX:+UseG1GC -Xms16m -Xmx32m -XX:MaxMetaspaceSize=64m -jar "$filenames" --server.port==$PT_PORT --server.servlet.context-path=$Tool_path --getAccessTokenUrl=https://chat.kwxos.top/url/auth/refresh_token --chatUrl=http(s)://chat.kwxos.top/v1/chat/completions >> /data/logs/$log_file 2>&1 &
+        java -XX:+UseG1GC -Xms16m -Xmx32m -XX:MaxMetaspaceSize=64m -jar "$filenames" --server.port==$PT_PORT --server.servlet.context-path=$Tool_path --getAccessTokenUrl=https://chat.kwxos.top/url/auth/refresh_token --chatUrl=https://chat.kwxos.top/v1/chat/completions >> /data/logs/$log_file 2>&1 &
         sleep 3
     fi
     current_hour=$(date +"%H")

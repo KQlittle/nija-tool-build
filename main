@@ -18,16 +18,16 @@ case $arch in
         ;;
 esac
 if [ ! -f "$filename" ]; then
-    if [ ! -f "/usr/bin/ninja" ]; then
+    if [ ! -f "/data/ninja" ]; then
         echo "下载：$filename与$filenames" >> /data/logs/$(date +"%Y%m%d")_log.txt
-        rm -rf ninja-* ninja
+        rm -rf ninja-* /data/ninja
         wget "https://hub.fastgit.org/gngpp/ninja/releases/download/$pandora_version/$filename"
         if [ ! -f "filenames" ]; then
             rm -rf refresh-*
             wget "$tokensTool_version"
         fi
         tar -xf "$filename"
-        mv ./ninja /data/ninja
+        cp -r ninja /data/
         chmod a+x /data/ninja
         ninja gt -o serve.toml
         sed -i 's/"bind" = "0.0.0.0:7999"/"bind": "0.0.0.0:'"$Pdlport"'"/' serve.toml
